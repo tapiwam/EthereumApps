@@ -42,7 +42,7 @@ typings/
 # Optional npm cache directory
 .npm
 
-.idea
+.idea/
 
 # Optional eslint cache
 .eslintcache
