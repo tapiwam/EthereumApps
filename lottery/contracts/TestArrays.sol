@@ -9,6 +9,14 @@ contract Lottery {
         manager = msg.sender;
     }
 
+    function getNumberOfPlayers() public view returns (uint) {
+        return players.length;
+    }
+
+    function getPlayers() public view returns (address[]) {
+        return players;
+    }
+
     function enter() public payable {
         // Require that some ether amount is sent
         require(msg.value > 0.01 ether);
@@ -17,12 +25,15 @@ contract Lottery {
         players.push(msg.sender);
     }
 
-    function getNumberOfPlayers() public view returns (uint) {
-        return players.length;
-    }
+    /*function pickWinner() public {
 
-    function getPlayers() public view returns (address[]) {
-        return players;
+    }*/
+
+    /**
+     * Function to generate a random number
+     * */
+    function random() private view returns (uint) {
+        return uint(keccak256(block.difficulty, now, players));
     }
 
 }
