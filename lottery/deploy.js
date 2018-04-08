@@ -17,8 +17,7 @@ const deploy = async () => {
 
     let constractHash = await new web3.eth.Contract(JSON.parse(interface))
         .deploy({
-            data: bytecode,
-            arguments: ['First try!']
+            data: bytecode
         })
         .send({
             gas: '1000000',
