@@ -23,12 +23,21 @@ contract Lottery {
 
         // Add player
         players.push(msg.sender);
+
+        // Reset contract
     }
 
-    function pickWinner() public {
+    function pickWinner() public restricted {
+
+        // Pick the winner using random
         uint index = random() % players.length;
         address winner = players[index];
+
+        // Send balance
         winner.transfer(this.balance);
+
+        // Reset
+        reset();
     }
 
     /**
@@ -38,4 +47,18 @@ contract Lottery {
         return uint(keccak256(block.difficulty, now, players));
     }
 
+    function reset() private restricted {
+        require(this.balance == 0);
+        players = new address[](0);
+    }
+
+    // ========================================
+
+    /**
+     * Function modifier used to restric access to functions
+     */
+    modifier restricted() {
+        require(manager == msg.sender);
+        _;   // Injected code is inserted here
+    }
 }
