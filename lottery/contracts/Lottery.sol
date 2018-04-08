@@ -25,9 +25,11 @@ contract Lottery {
         players.push(msg.sender);
     }
 
-    /*function pickWinner() public {
-
-    }*/
+    function pickWinner() public {
+        uint index = random() % players.length;
+        address winner = players[index];
+        winner.transfer(this.balance);
+    }
 
     /**
      * Function to generate a random number
