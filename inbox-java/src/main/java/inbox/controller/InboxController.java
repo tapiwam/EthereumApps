@@ -16,24 +16,23 @@ public class InboxController {
     @Autowired
     private EthereumService ethereumService;
 
-    @GetMapping(value = "/client/version")
+    @GetMapping(value = {"/", ""})
     public JsonResponse test(){
 
         JsonResponse json = null;
         try {
-
-            // json = new JsonResponse(true, "Client version found", null, clientVersion);
-            // logger.error("Found ethereum client version. @clientVersion=" + clientVersion);
-
+            String msg = ethereumService.getInboxContract().getMessage().send();
+            json = new JsonResponse(true, "Inbox message found", null, msg);
+            logger.info("Inbox message found. @message=" + msg);
         } catch (Exception e){
-
-            // json = new JsonResponse(false, "Error fetching ethereum client version", null, null);
-            // logger.error("Error fetching ethereum client version. @error=" + e.getMessage());
+            json = new JsonResponse(false, "Error fetching inbox message", null, null);
+            logger.error("Error fetching inbox message. @error=" + e.getMessage());
             e.printStackTrace();
-
         }
 
         return json;
     }
+
+
 
 }
