@@ -1,19 +1,27 @@
 pragma solidity ^0.4.0;
 
 interface Regulator {
-    function checkValue(int amount) returns (bool);
-    function loan() returns (bool);
+    function checkValue(int amount) external returns (bool);
+    function loan() external returns (bool);
 }
 
 contract Bank is Regulator {
 
     int private value;
+    address private owner;
 
-    function deposit(int amount) public {
+    // Owner based functionality only - modfier will interject
+    modifier ownerFunc {
+        require(owner == msg.sender);
+        _;
+    }
+
+    function deposit(int amount) ownerFunc public {
+        owner = msg.sender;
         value += amount;
     }
 
-    function withdraw(int amount) public {
+    function withdraw(int amount) ownerFunc public {
         if(checkValue(amount)){
             value -= amount;
         }
@@ -23,15 +31,15 @@ contract Bank is Regulator {
         return value;
     }
 
-    function Bank(int initialBalance) public {
+    constructor(int initialBalance) public {
         value = initialBalance;
     }
 
-    function loan() returns (bool) {
+    function loan() public returns (bool) {
         return value > 0;
     }
 
-    function checkValue(int amount) returns (bool) {
+    function checkValue(int amount) public returns (bool) {
         return amount <= value;
     }
 
@@ -42,12 +50,12 @@ contract FirstContract is Bank(10) {
     string private name;
     uint8 private age;
 
-    function FirstContract(string initialName, uint8 initialAge){
+    constructor(string initialName, uint8 initialAge) public {
         name = initialName;
         age = initialAge;
     }
 
-    function setName(string newName){
+    function setName(string newName) public {
         name = newName;
     }
 
@@ -55,7 +63,7 @@ contract FirstContract is Bank(10) {
         return name;
     }
 
-    function setAge(uint8 newAge){
+    function setAge(uint8 newAge) public {
         age = newAge;
     }
 
