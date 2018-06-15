@@ -1,5 +1,6 @@
 
 mkdir output
+rm output/*
 
 solc inbox.sol --bin --abi --optimize -o ./output/
 

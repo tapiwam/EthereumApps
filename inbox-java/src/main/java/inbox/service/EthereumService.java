@@ -7,8 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.EthFilter;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
+import rx.Observable;
 
+import javax.annotation.PreDestroy;
 import java.math.BigInteger;
 
 @Slf4j
@@ -23,11 +27,13 @@ public class EthereumService {
 
     private Inbox inboxContract;
 
+    private Observable<Inbox.NewMessageEventResponse> messageEventResponseObservable;
+
     @Value(value = "${web3.contracts.inbox.address}")
     private String inboxAddress;
 
-    private static final BigInteger GAS_PRICE = new BigInteger("10000");
-    private static final BigInteger  GAS_LIMIT = new BigInteger("30000000");
+    private static final BigInteger GAS_PRICE = new BigInteger("10");
+    private static final BigInteger  GAS_LIMIT = new BigInteger("300000");
 
     // @PostConstruct
     public void testConnection() {
@@ -81,6 +87,9 @@ public class EthereumService {
                 loadContract();
             }
 
+            /*logger.info("No inbox address passed. Creating new contract");
+            deployInbox();*/
+
             logger.info("Loaded inbox contract "
                     + "\n@address=" + inboxAddress
                     + "\n@walletAddress=" + wallet.getAddress()
@@ -94,6 +103,7 @@ public class EthereumService {
 
     private void loadContract() throws Exception {
         inboxContract = Inbox.load(inboxAddress, web3j, wallet, GAS_PRICE, GAS_LIMIT);
+        inboxMessageSubscribe();
     }
 
     private void deployInbox() throws Exception {
@@ -101,6 +111,33 @@ public class EthereumService {
                 web3j, wallet,
                 GAS_PRICE, GAS_LIMIT,
                 "Hello").send();
+
+        inboxMessageSubscribe();
     }
 
+
+    public void inboxMessageSubscribe() throws Exception {
+        // EthFilter filter = new EthFilter();
+        messageEventResponseObservable = getInboxContract()
+                // .newMessageEventObservable(filter)
+                .newMessageEventObservable(DefaultBlockParameterName.EARLIEST, DefaultBlockParameterName.LATEST)
+                .asObservable();
+
+        logger.warn(">>> EVENT OBSERVABLE SET : " + messageEventResponseObservable);
+        startMessageListener();
+    }
+
+    public void startMessageListener(){
+        logger.warn(">>> EVENT SUBSCRIPTION INIT <<<");
+        messageEventResponseObservable
+                .subscribe(event -> {
+                    logger.info(">>> EVENT ALERT: " + event.toString());
+                });
+        logger.warn(">>> EVENT SUBSCRIPTION INIT DONE <<<");
+    }
+
+    @PreDestroy
+    public void stopMessageListener(){
+        // messageEventResponseObservable.un
+    }
 }
