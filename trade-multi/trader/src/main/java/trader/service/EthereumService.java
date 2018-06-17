@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.web3j.abi.datatypes.Bool;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
 import org.web3j.tx.Contract;
+import org.web3j.tx.TransactionManager;
 import rx.Observable;
 import trader.contracts.Trade;
 
@@ -31,11 +33,17 @@ public class EthereumService {
 
     // private Observable<Inbox.NewMessageEventResponse> messageEventResponseObservable;
 
-    @Value(value = "${web3.contracts.trade.address}")
-    private String tradeAddress;
+    @Getter
+    private String tradeAddress = "";
 
-    private static final BigInteger GAS_PRICE = new BigInteger("1");
-    private static final BigInteger  GAS_LIMIT = new BigInteger("300000");
+    private Boolean isDeployed = null;
+
+    @Getter
+    @Value(value = "${web3.contracts.trade.address}")
+    private String tradeAddressInit;
+
+    private static final BigInteger GAS_PRICE = new BigInteger("10000");
+    private static final BigInteger  GAS_LIMIT = new BigInteger("3000000");
 
     // @PostConstruct
     public void testConnection() {
@@ -51,6 +59,10 @@ public class EthereumService {
 
     }
 
+    /*public void check{
+        TransactionManager tx = new Transa
+    }*/
+
     public String getClientVersion() throws Exception {
         Web3ClientVersion web3ClientVersion = web3j.web3ClientVersion().send();
         String clientVersion = web3ClientVersion.getWeb3ClientVersion();
@@ -58,7 +70,13 @@ public class EthereumService {
     }
 
     public Trade getTradeContract() throws Exception {
-        if(tradeContract == null){
+        if(tradeContract == null && (isDeployed == null)){
+
+            if(tradeAddressInit == null || tradeAddressInit.length() == 0){
+                logger.warn("No Address provided in properties file");
+            } else {
+                tradeAddress = tradeAddressInit;
+            }
 
             logger.info("Loading trader contract "
                     + "\n@address=" + tradeAddress
@@ -77,7 +95,7 @@ public class EthereumService {
             /*logger.info("No trader address passed. Creating new contract");
             deployInbox();*/
 
-            logger.info("Loaded trader contract "
+            logger.info("POST - Loaded trader contract "
                     + "\n@address=" + tradeAddress
                     + "\n@walletAddress=" + wallet.getAddress()
                     + "\n@publicKey=" +wallet.getEcKeyPair().getPublicKey().toString()
@@ -91,6 +109,9 @@ public class EthereumService {
     private void loadContract() throws Exception {
         tradeContract = Trade.load(tradeAddress, web3j, wallet, GAS_PRICE, GAS_LIMIT);
         // inboxMessageSubscribe();
+        logger.warn(">>>>> FOUND DEPLOYED TRADE CONTRACT : " + tradeAddress );
+
+        isDeployed = true;
     }
 
     private void deployInbox() throws Exception {
@@ -98,6 +119,10 @@ public class EthereumService {
                 web3j, wallet,
                 GAS_PRICE, GAS_LIMIT).send();
 
+        tradeAddress = tradeContract.getContractAddress();
+        logger.warn(">>>>> DEPLOYED TRADE CONTRACT : " + tradeAddress );
+
+        isDeployed = true;
         // inboxMessageSubscribe();
     }
 

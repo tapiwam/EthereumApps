@@ -7,6 +7,7 @@ import trader.service.EthereumService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import trader.service.TradeService;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -19,21 +20,21 @@ public class TradeController {
     @Autowired
     private EthereumService ethereumService;
 
+    @Autowired
+    private TradeService tradeService;
+
     @GetMapping(value = {"/", ""})
     public JsonResponse getTransactions(){
 
         JsonResponse json = null;
         try {
-            List<BigInteger> msg = ethereumService.getTradeContract()
-                    //.getTransListBySize(BigInteger.valueOf(10L))
-                    .getTransList()
-                    .send();
+            List<BigInteger> items = tradeService.chainGetTranList();
 
-            json = new JsonResponse(true, "TranIDs", null, msg);
-            logger.info("Inbox message found. @message=" + msg);
+            json = new JsonResponse(true, "TranIDs", null, items);
+            logger.info("Tran IDS found. @items=" + items);
         } catch (Exception e){
-            json = new JsonResponse(false, "Error fetching trader message", null, null);
-            logger.error("Error fetching trader message. @error=" + e.getMessage());
+            json = new JsonResponse(false, "Error fetching tran ids", null, null);
+            logger.error("Error fetching tran ids. @error=" + e.getMessage());
             e.printStackTrace();
         }
 
@@ -47,21 +48,8 @@ public class TradeController {
         JsonResponse json = null;
         try {
 
-            TransactionReceipt transactionReceipt = ethereumService
-                    .getTradeContract()
-                    .updateTran(
-                            // BigInteger.valueOf(trade.getTranId())
-                            trade.getTranId()
-                            , trade.getStatus().toString()
-                            , trade.getAccount()
-                            , trade.getAsset()
-                            , trade.getLocation()
-                            // , BigInteger.valueOf(trade.getQuantity())
-                            , trade.getQuantity()
-                            // , BigInteger.valueOf(trade.getAmount())
-                            , trade.getAmount()
-                            , trade.getUser())
-                    .send();
+
+            TransactionReceipt transactionReceipt = tradeService.chainUpdateTrade(trade);
 
             json = new JsonResponse(true, "Trade message set", null, transactionReceipt);
 
@@ -112,6 +100,28 @@ public class TradeController {
                     + "\n@transactionHash=" + transactionReceipt.getTransactionHash()
                     + "\n@transactionIndex=" + transactionReceipt.getTransactionIndex()
             );
+        } catch (Exception e){
+            json = new JsonResponse(false, "Error setting trade message", null, null);
+            logger.error("Error fetching trader message. @error=" + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return json;
+    }
+
+    @GetMapping(value = {"/{tranid}"} )
+    public JsonResponse getTran(
+            @PathVariable("trainid") BigInteger tranid
+    ){
+
+        JsonResponse json = null;
+        try {
+
+            TradeBO trade = tradeService.chainGetTran(tranid);
+
+            json = new JsonResponse(true, null, null, trade);
+
+            logger.info("Trade search. @trade=" + trade);
         } catch (Exception e){
             json = new JsonResponse(false, "Error setting trade message", null, null);
             logger.error("Error fetching trader message. @error=" + e.getMessage());
