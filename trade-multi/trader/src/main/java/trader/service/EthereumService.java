@@ -1,6 +1,6 @@
-package inbox.service;
+package trader.service;
 
-import inbox.contracts.Inbox;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,9 +8,10 @@ import org.springframework.stereotype.Service;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.response.EthFilter;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
+import org.web3j.tx.Contract;
 import rx.Observable;
+import trader.contracts.Trade;
 
 import javax.annotation.PreDestroy;
 import java.math.BigInteger;
@@ -25,14 +26,15 @@ public class EthereumService {
     @Autowired
     private Credentials wallet;
 
-    private Inbox inboxContract;
+    @Getter
+    private Trade tradeContract;
 
-    private Observable<Inbox.NewMessageEventResponse> messageEventResponseObservable;
+    // private Observable<Inbox.NewMessageEventResponse> messageEventResponseObservable;
 
-    @Value(value = "${web3.contracts.inbox.address}")
-    private String inboxAddress;
+    @Value(value = "${web3.contracts.trade.address}")
+    private String tradeAddress;
 
-    private static final BigInteger GAS_PRICE = new BigInteger("10");
+    private static final BigInteger GAS_PRICE = new BigInteger("1");
     private static final BigInteger  GAS_LIMIT = new BigInteger("300000");
 
     // @PostConstruct
@@ -55,68 +57,52 @@ public class EthereumService {
         return clientVersion;
     }
 
-    public Inbox getInboxContract() throws Exception {
-        if(inboxContract == null){
-            /*
-            logger.info("Loading inbox contract "
-                    + "\n@address=" + inboxAddress
-                    + "\n@wallet=" + wallet.getAddress()
-                    + "\n@publicKey=" +wallet.getEcKeyPair().getPublicKey().toString()
-            );
-            inboxContract = Inbox.load(inboxAddress, web3j, wallet, GAS_PRICE, GAS_LIMIT);
-            logger.info("Loaded inbox contract "
-                    + "\n@address=" + inboxAddress
-                    + "\n@walletAddress=" + wallet.getAddress()
-                    + "\n@publicKey=" +wallet.getEcKeyPair().getPublicKey().toString()
-                    + "\n@contractAddress=" + inboxContract.getContractAddress()
-            );
-            */
+    public Trade getTradeContract() throws Exception {
+        if(tradeContract == null){
 
-
-            logger.info("Loading inbox contract "
-                    + "\n@address=" + inboxAddress
+            logger.info("Loading trader contract "
+                    + "\n@address=" + tradeAddress
                     + "\n@wallet=" + wallet.getAddress()
                     + "\n@publicKey=" +wallet.getEcKeyPair().getPublicKey().toString()
             );
 
-            if(inboxAddress == null || inboxAddress.length() == 0){
-                logger.info("No inbox address passed. Creating new contract");
+            if(tradeAddress == null || tradeAddress.length() == 0){
+                logger.info("No trader address passed. Creating new contract");
                 deployInbox();
             } else {
                 logger.info("Inbox address passed. Load existing contract");
                 loadContract();
             }
 
-            /*logger.info("No inbox address passed. Creating new contract");
+            /*logger.info("No trader address passed. Creating new contract");
             deployInbox();*/
 
-            logger.info("Loaded inbox contract "
-                    + "\n@address=" + inboxAddress
+            logger.info("Loaded trader contract "
+                    + "\n@address=" + tradeAddress
                     + "\n@walletAddress=" + wallet.getAddress()
                     + "\n@publicKey=" +wallet.getEcKeyPair().getPublicKey().toString()
-                    + "\n@contractAddress=" + inboxContract.getContractAddress()
+                    + "\n@contractAddress=" + tradeContract.getContractAddress()
             );
         }
 
-        return inboxContract;
+        return tradeContract;
     }
 
     private void loadContract() throws Exception {
-        inboxContract = Inbox.load(inboxAddress, web3j, wallet, GAS_PRICE, GAS_LIMIT);
-        inboxMessageSubscribe();
+        tradeContract = Trade.load(tradeAddress, web3j, wallet, GAS_PRICE, GAS_LIMIT);
+        // inboxMessageSubscribe();
     }
 
     private void deployInbox() throws Exception {
-        inboxContract = Inbox.deploy(
+        tradeContract = Trade.deploy(
                 web3j, wallet,
-                GAS_PRICE, GAS_LIMIT,
-                "Hello").send();
+                GAS_PRICE, GAS_LIMIT).send();
 
-        inboxMessageSubscribe();
+        // inboxMessageSubscribe();
     }
 
 
-    public void inboxMessageSubscribe() throws Exception {
+    /*public void inboxMessageSubscribe() throws Exception {
         // EthFilter filter = new EthFilter();
         messageEventResponseObservable = getInboxContract()
                 // .newMessageEventObservable(filter)
@@ -125,19 +111,14 @@ public class EthereumService {
 
         logger.warn(">>> EVENT OBSERVABLE SET : " + messageEventResponseObservable);
         startMessageListener();
-    }
+    }*/
 
-    public void startMessageListener(){
+    /*public void startMessageListener(){
         logger.warn(">>> EVENT SUBSCRIPTION INIT <<<");
         messageEventResponseObservable
                 .subscribe(event -> {
                     logger.info(">>> EVENT ALERT: " + event.message);
                 });
         logger.warn(">>> EVENT SUBSCRIPTION INIT DONE <<<");
-    }
-
-    @PreDestroy
-    public void stopMessageListener(){
-        // messageEventResponseObservable.un
-    }
+    }*/
 }
