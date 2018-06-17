@@ -50,17 +50,20 @@ public class TradeController {
             TransactionReceipt transactionReceipt = ethereumService
                     .getTradeContract()
                     .updateTran(
-                            BigInteger.valueOf(trade.getTranId())
+                            // BigInteger.valueOf(trade.getTranId())
+                            trade.getTranId()
                             , trade.getStatus().toString()
                             , trade.getAccount()
                             , trade.getAsset()
                             , trade.getLocation()
-                            , BigInteger.valueOf(trade.getQuantity())
-                            , BigInteger.valueOf(trade.getAmount())
+                            // , BigInteger.valueOf(trade.getQuantity())
+                            , trade.getQuantity()
+                            // , BigInteger.valueOf(trade.getAmount())
+                            , trade.getAmount()
                             , trade.getUser())
                     .send();
 
-            json = new JsonResponse(true, "Inbox message set", null, transactionReceipt);
+            json = new JsonResponse(true, "Trade message set", null, transactionReceipt);
 
             logger.info("Trade message set. "
                     + "\n@trade=" + trade
@@ -71,7 +74,7 @@ public class TradeController {
                     + "\n@transactionIndex=" + transactionReceipt.getTransactionIndex()
             );
         } catch (Exception e){
-            json = new JsonResponse(false, "Error setting trader message", null, null);
+            json = new JsonResponse(false, "Error setting trade message", null, null);
             logger.error("Error fetching trader message. @error=" + e.getMessage());
             e.printStackTrace();
         }
@@ -80,5 +83,42 @@ public class TradeController {
     }
 
 
+    @GetMapping(value = {"/status/{tranid}/{status}"} )
+    public JsonResponse updateTransactionStatus(
+            @PathVariable("trainid") BigInteger tranid,
+            @PathVariable("status") String status
+    ){
+
+        JsonResponse json = null;
+        try {
+
+            TransactionReceipt transactionReceipt = ethereumService
+                    .getTradeContract()
+                    .updateTranStatus(
+                            tranid,
+                            status,
+                            "REST"
+                    )
+                    .send();
+
+            json = new JsonResponse(true, "Trade message set", null, transactionReceipt);
+
+            logger.info("Trade Status updated. "
+                    + "\n@tranid=" + tranid
+                    + "\n@tran_status=" + status
+                    + "\n@status=" + transactionReceipt.getStatus()
+                    + "\n@blockHash=" + transactionReceipt.getBlockHash()
+                    + "\n@blockNumber=" + transactionReceipt.getBlockNumber()
+                    + "\n@transactionHash=" + transactionReceipt.getTransactionHash()
+                    + "\n@transactionIndex=" + transactionReceipt.getTransactionIndex()
+            );
+        } catch (Exception e){
+            json = new JsonResponse(false, "Error setting trade message", null, null);
+            logger.error("Error fetching trader message. @error=" + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return json;
+    }
 
 }

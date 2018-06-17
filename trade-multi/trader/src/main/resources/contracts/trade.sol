@@ -4,6 +4,9 @@ contract Trade {
 
     address internal owner;
 
+    event TradeUpdate(uint tranid);
+    event TradeStatusUpdate(uint tranid, string status);
+
     modifier isOwner(){
         require(msg.sender == owner);
         _;
@@ -60,6 +63,7 @@ contract Trade {
         transactions[_tranid].timestamp = block.timestamp;
         transactions[_tranid].user = _user;
 
+        TradeStatusUpdate(_tranid, _status);
     }
 
     function findTranPosition(uint tranid) public constant returns (uint){
@@ -108,24 +112,25 @@ contract Trade {
         return elements;
     }
 
-    // 3, "P", "A123", "123", "DTC", 100, 10, "USER"
     function updateTran(
         uint _tranid,
         string _status,
         string _account,
         string _asset,
-        string _location,
+        string _loaction,
         int _quantity,
         int _amount,
         string _user
     ) public {
-        Tran memory tran = Tran(_tranid, _status, _account, _asset, _location, _quantity, _amount, block.timestamp, _user);
+        Tran memory tran = Tran(_tranid, _status, _account, _asset, _loaction, _quantity, _amount, block.timestamp, _user);
         bool itemExists = (transactions[_tranid].tranid == _tranid);
         transactions[_tranid] = tran;
 
         if(!itemExists){
             trans.push(_tranid);
         }
+
+        TradeUpdate(_tranid);
     }
 
 

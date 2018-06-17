@@ -1,36 +1,49 @@
-package trader.bo;
+package trader.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import trader.entity.ETrade;
 
+import javax.persistence.*;
 import java.math.BigInteger;
 
 @Slf4j
+@Entity
 @Getter
 @Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TradeBO {
+public class ETrade {
 
+    @Id
+    @Column
     private BigInteger tranId;
+
+    @Enumerated(EnumType.STRING)
+    @Column
     private trader.bo.TradeStatus status;
+
+    @Column
     private String account;
+
+    @Column
     private String asset;
+
+    @Column
     private String location;
+
+    @Column
     private BigInteger quantity;
+
+    @Column
     private BigInteger amount;
+
+    @Column
     private BigInteger timestamp;
+
+    @Column
     private String user;
-
-    public ETrade generateTrade(){
-        ETrade trade = new ETrade(
-                tranId, status, account, asset, location,
-                quantity, amount, timestamp, user
-        );
-
-        return trade;
-    }
 
 }
