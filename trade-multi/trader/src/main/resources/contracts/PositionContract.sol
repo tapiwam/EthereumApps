@@ -1,12 +1,23 @@
 pragma solidity ^0.4.0;
 
-library  Util {
 
-    function getLength(uint[] data) public pure returns(uint){
+/**
+ * Common utilities for trades
+ */
+contract TradeUtil {
+
+    address internal owner;
+
+    modifier isOwner(){
+        require(msg.sender == owner);
+        _;
+    }
+
+    function getLength(uint[] data) internal pure returns(uint){
         return data.length;
     }
 
-    function findPositionInList(uint id, uint[] data) public pure returns (uint){
+    function findPositionInList(uint[] data, uint id) internal pure returns (uint){
         uint _len = getLength(data);
         int _pos = -1;
 
@@ -21,7 +32,7 @@ library  Util {
         return uint(_pos);
     }
 
-    function maxNumber(uint[] data) public pure returns(uint){
+    function maxNumber(uint[] data) internal pure returns(uint){
         // require (data.length > 0);
 
         uint m = 0;
@@ -56,8 +67,8 @@ library  Util {
         return counter;
     }
 
-    function getSubListFromElementPosition(uint id, uint[] data) public pure returns(uint[]){
-        uint _pos = findPositionInList(id, data);
+    function getSubListFromElementPosition(uint[] data, uint id) internal pure returns(uint[]){
+        uint _pos = findPositionInList(data, id);
         uint _len = getLength(data);
         uint _size = countTransGreaterThan(data, id);
 
@@ -70,7 +81,7 @@ library  Util {
         return elements;
     }
 
-    function getSubListBySize(uint[] data, uint size) public constant returns(uint[]){
+    function getSubListBySize(uint[] data, uint size) internal pure returns(uint[]){
 
         uint _len = getLength(data);
         uint _start = _len - size;
@@ -83,22 +94,57 @@ library  Util {
         return elements;
     }
 
+    function strConcat(string _a, string _b, string _c, string _d, string _e) internal pure returns (string){
+        bytes memory _ba = bytes(_a);
+        bytes memory _bb = bytes(_b);
+        bytes memory _bc = bytes(_c);
+        bytes memory _bd = bytes(_d);
+        bytes memory _be = bytes(_e);
+        string memory abcde = new string(_ba.length + _bb.length + _bc.length + _bd.length + _be.length);
+        bytes memory babcde = bytes(abcde);
+        uint k = 0;
+        for (uint i = 0; i < _ba.length; i++) babcde[k++] = _ba[i];
+        for (i = 0; i < _bb.length; i++) babcde[k++] = _bb[i];
+        for (i = 0; i < _bc.length; i++) babcde[k++] = _bc[i];
+        for (i = 0; i < _bd.length; i++) babcde[k++] = _bd[i];
+        for (i = 0; i < _be.length; i++) babcde[k++] = _be[i];
+        return string(babcde);
+    }
+
+    function strConcat(string _a, string _b, string _c, string _d) internal pure returns (string) {
+        return strConcat(_a, _b, _c, _d, "");
+    }
+
+    function strConcat(string _a, string _b, string _c) internal pure returns (string) {
+        return strConcat(_a, _b, _c, "", "");
+    }
+
+    function strConcat(string _a, string _b) internal pure returns (string) {
+        return strConcat(_a, _b, "", "", "");
+    }
+
+    function strToLower(string str) internal pure returns (string) {
+        bytes memory bStr = bytes(str);
+        bytes memory bLower = new bytes(bStr.length);
+        for (uint i = 0; i < bStr.length; i++) {
+            // Uppercase character...
+            if ((bStr[i] >= 65) && (bStr[i] <= 90)) {
+                // So we add 32 to make it lowercase
+                bLower[i] = bytes1(int(bStr[i]) + 32);
+            } else {
+                bLower[i] = bStr[i];
+            }
+        }
+        return string(bLower);
+    }
 }
 
-contract PositionContract {
-
-    address internal owner;
-
-    // event PositionUpdate(string account, string asset, string location);
-    event PositionUpdate(uint id);
-
-    modifier isOwner(){
-        require(msg.sender == owner);
-        _;
-    }
+library TradeObjects {
 
     struct Position {
         uint id;
+        string pKey;
+        uint tranid;
         string account;
         string asset;
         string location;
@@ -108,37 +154,87 @@ contract PositionContract {
         string user;
     }
 
-    mapping(uint => Position) public positions ;
+    struct Tran {
+        uint tranid;
+        string status;
+        string account;
+        string asset;
+        string location;
+        int quantity;
+        int amount;
+        uint timestamp;
+        string user;
+    }
+}
+
+
+contract PositionContract is TradeUtil {
+
+    // event PositionUpdate(string account, string asset, string location);
+    event PositionUpdate(uint id);
+
+    // Holds actual trades
+    mapping(uint => TradeObjects.Position) public positions;
+
+    // Map of keys to ids
+    mapping(string => uint) internal idMap;
+
+    // List of ids
     uint[] public pos;
 
+    // ==============
 
-    function getList() public constant returns(uint[]){
+    function compileKey(string _account, string _asset, string _loaction) public pure returns (string){
+        string memory key = strConcat( _account, "_",  _asset, "_", _loaction );
+        return strToLower(key);
+    }
+
+    // ==============
+
+    /**
+     * Check a position exists by key attributes
+     */
+    function checkKeyExists(string _account, string _asset, string _loaction) public view returns(bool) {
+        return checkKeyExists(compileKey(_account, _asset, _loaction));
+    }
+
+    /**
+     * Check a position exists by key
+     */
+    function checkKeyExists(string _key) public view returns(bool) {
+        return idMap[_key] > 0;
+    }
+
+    // ==============
+
+    /**
+     * Get ID based on key attributes of position
+     */
+    function getKeyId(string _account, string _asset, string _loaction) public view returns(uint) {
+        return idMap[compileKey(_account, _asset, _loaction)];
+    }
+
+    /**
+     * Get ID based on key of position
+     */
+    function getKeyId(string _key) public view returns(uint) {
+        return idMap[_key];
+    }
+
+    // ==============
+
+    /**
+     * Get the position IDs
+     */
+    function getPositionIds() public view returns (uint[]){
         return pos;
     }
 
-    function getSubListBySize(uint size) public view returns(uint[]) {
-        return Util.getSubListBySize(pos, size);
-    }
+    // ==============
 
-    function getSubListFromElementPosition(uint id) public view returns(uint[]){
-        return Util.getSubListFromElementPosition(id, pos);
-    }
-
-
-    function getTransListFromTranId(uint positionid) public constant returns(uint[]){
-        uint _pos = Util.findPositionInList(positionid, pos);
-        uint _len = pos.length;
-        uint _size = Util.countTransGreaterThan(pos, positionid);
-
-        uint[] memory elements = new uint[](_size);
-
-        for(uint i=_pos; i<_len;i++){
-            elements[i-_pos] = pos[i];
-        }
-
-        return elements;
-    }
-
+    /**
+     * Update a position record
+     */
     function updatePosition(
         string _account,
         string _asset,
@@ -148,46 +244,55 @@ contract PositionContract {
         string _user
     ) public {
 
-        bool exists = checkExists(_account, _asset, _loaction);
+        string memory _key = compileKey(_account, _asset, _loaction);
+
+        bool itemExists = checkKeyExists(_key);
+
         uint _id = 0;
-        if(exists){
-            _id = getId(_account, _asset, _loaction);
+        if(itemExists){
+            _id = idMap[_key];
         } else {
-            _id = Util.maxNumber(pos) + 1;
+            _id = maxNumber(pos) + 1;
         }
 
-        Position memory p = Position(_id, _account, _asset, _loaction, _quantity, _quantityP, block.timestamp, _user);
-        positions[_id] = p;
 
-        if(!exists){
+        TradeObjects.Position memory p = TradeObjects.Position(_id, _key, 0, _account, _asset, _loaction, _quantity, _quantityP, block.timestamp, _user);
+        positions[_id] = p;
+        idMap[_key] = _id;
+
+        if(!itemExists){
             pos.push(_id);
         }
 
         PositionUpdate(_id);
     }
 
+    // ==============
+
     function getPosition(string _account, string _asset, string _loaction) public view returns (
-        uint id,
+        uint id, string key,
         string account, string asset,
         string location, int quantity,
         int quantityPending, uint timestamp,
         string user
     ) {
-        uint _id = getId(_account, _asset, _loaction);
+        // uint _id = getId(_account, _asset, _loaction);
+        uint _id = getKeyId(_account, _asset, _loaction);
         return getPosition(_id);
     }
 
     function getPosition(uint _id) public constant returns (
-        uint id,
+        uint id, string key,
         string account, string asset,
         string location, int quantity,
         int quantityPending, uint timestamp,
         string user
     ){
-        // require(checkjExists(_tranid));
+        // require(checkExists(_tranid));
 
-        Position memory position = positions[id];
+        TradeObjects.Position memory position = positions[_id];
         id = position.id;
+        key = position.pKey;
         account = position.account;
         asset = position.asset;
         location = position.location;
@@ -197,52 +302,33 @@ contract PositionContract {
         user = position.user;
     }
 
-    function checkExists(string account, string asset, string location) public constant returns (bool){
-        uint _len = pos.length;
-        require(_len > 0);
+    // ==========
 
-
-        for(uint i=0; i<_len;i++){
-            if(
-                keccak256(positions[i].account) == keccak256(account)
-                && keccak256(positions[i].asset) == keccak256(asset)
-                && keccak256(positions[i].location) == keccak256(location)
-            // StringUtils.equal(positions[i].account, account)
-            // && positions[i].asset == asset
-            //&& positions[i].location == location
-            ) {
-                return true;
-            }
-        }
-
-        return false;
+    /**
+     * Get the last few records
+     */
+    function getSubListBySize(uint size) public view returns(uint[]) {
+        return getSubListBySize(pos, size);
     }
 
     /**
-     * Get ID based on key attributes of position
+     * Get all sebsequent records from a given position
      */
-    function getId(string account, string asset, string location) public constant returns (uint){
-
-        uint id = 0;
-        uint _len = pos.length;
-
-        for(uint i=0; i<_len;i++){
-            if(
-                keccak256(positions[i].account) == keccak256(account)
-                && keccak256(positions[i].asset) == keccak256(asset)
-                && keccak256(positions[i].location) == keccak256(location)
-
-            // positions[i].account == account
-            // && positions[i].asset == asset
-            // && positions[i].location == location
-            ) {
-                id = positions[i].id;
-                break;
-            }
-        }
-
-        require(id > 0);
-        return uint(id);
+    function getSubListFromElementPosition(uint id) public view returns(uint[]){
+        return getSubListFromElementPosition(pos, id);
     }
+
+
+    /**
+     * Get all subsequent records from a given key
+     */
+    function getTransListFromKeyPosition(string key) public constant returns(uint[]){
+
+        uint _id = getKeyId(key);
+        uint _pos = findPositionInList(pos, _id);
+        return getSubListFromElementPosition(pos, _pos);
+    }
+
+    // ==========
 
 }
