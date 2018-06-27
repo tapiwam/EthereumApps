@@ -167,7 +167,6 @@ library TradeObjects {
     }
 }
 
-
 contract PositionContract is TradeUtil {
 
     // event PositionUpdate(string account, string asset, string location);
@@ -330,5 +329,98 @@ contract PositionContract is TradeUtil {
     }
 
     // ==========
+
+}
+
+contract TradeContract is TradeUtil {
+
+    mapping(uint => TradeObjects.Tran) public transactions ;
+    uint[] public trans;
+
+    event TradeUpdate(uint tranid);
+    event TradeStatusUpdate(uint tranid, string status);
+
+
+    function getTransList() public constant returns(uint[]){
+        return trans;
+    }
+
+    function getTransListBySize(uint size) public constant returns(uint[]){
+        return getSubListBySize(trans, size);
+    }
+
+    function findTranPosition(uint tranid) public constant returns (uint){
+        return findPositionInList(trans, tranid);
+    }
+
+    function getTransListFromTranId(uint tranid) public constant returns(uint[]){
+        return getSubListFromElementPosition(trans, tranid);
+    }
+
+    function checkTranExists(uint _tranid) public constant returns (bool){
+        return (transactions[_tranid].tranid == _tranid);
+    }
+
+    function getTransLength() public constant returns(uint){
+        return trans.length;
+    }
+
+    function getTran(uint _tranid) public constant returns (
+        uint tranid, string status,
+        string account, string asset,
+        string location, int quantity,
+        int amount, uint timestamp,
+        string user
+    ){
+        require(checkTranExists(_tranid));
+
+        TradeObjects.Tran memory tran = transactions[_tranid];
+        tranid = tran.tranid;
+        status = tran.status;
+        account = tran.account;
+        asset = tran.asset;
+        location = tran.location;
+        quantity = tran.quantity;
+        amount = tran.amount;
+        timestamp = tran.timestamp;
+        user = tran.user;
+    }
+
+    function updateTranStatus (
+        uint _tranid,
+        string _status,
+        string _user
+    ) public {
+        // Check that it exists
+        require(checkTranExists(_tranid));
+
+        // Update
+        transactions[_tranid].status = _status;
+        transactions[_tranid].timestamp = block.timestamp;
+        transactions[_tranid].user = _user;
+
+        TradeStatusUpdate(_tranid, _status);
+    }
+
+    function updateTran(
+        uint _tranid,
+        string _status,
+        string _account,
+        string _asset,
+        string _loaction,
+        int _quantity,
+        int _amount,
+        string _user
+    ) public {
+        TradeObjects.Tran memory tran = TradeObjects.Tran(_tranid, _status, _account, _asset, _loaction, _quantity, _amount, block.timestamp, _user);
+        bool itemExists = (transactions[_tranid].tranid == _tranid);
+        transactions[_tranid] = tran;
+
+        if(!itemExists){
+            trans.push(_tranid);
+        }
+
+        TradeUpdate(_tranid);
+    }
 
 }
